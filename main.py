@@ -53,7 +53,6 @@ def main():
             print("Definition not found, creating definition...")
             if create_definition(word) is None:
                 print("Not related")
-                return
             else:
                 definition = create_definition(word)
                 print("definition:", definition)
@@ -62,7 +61,6 @@ def main():
             definition = response.json().get('definition')
             if definition == "Not related." or definition == "Not related":
                 print("Not related")
-                return
             else:
                 print("definition:", definition)
 
