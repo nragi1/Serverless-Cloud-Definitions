@@ -7,10 +7,10 @@ OpenAI.api_key = os.environ.get('OPENAI_API_KEY')
 client = OpenAI()
 
 def create_definition(word):
-    system = {"role": "system", "content": "You're an AI Definition Bot, You're only response will be the definition of the word (20 words maximum) and nothing else. If the definition is not cloud computing related you will respond with 'Not related'."}
+    system = {"role": "system", "content": "Provide a concise definition (20 words maximum) related to cloud computing or cloud platforms for the following term. Use only necessary punctuation. If the term is not related to cloud computing, respond with 'Not related'."}
     history = []
     history.insert(0, system)
-    history.append({"role": "user", "content": word})
+    history.append({"role": "user", "content": f"Term: {word}"})
     try:
         completion = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -18,8 +18,22 @@ def create_definition(word):
             stream=False,
             max_tokens=100
         )
-        completion = completion.choices[0].message.content
-        return completion
+        definition = completion.choices[0].message.content
+        
+        data = {
+            "word": word,
+            "definition": definition
+        }
+        
+        function_url = os.environ.get('CREATE_FUNCTION_URL')
+        requests.post(function_url, json=data)
+        
+        if definition == "Not related":
+            return None
+        else:
+            return definition
+        
+        
 
     except Exception as e:
         print(e)
@@ -27,23 +41,34 @@ def create_definition(word):
     
 
 def main():
-    word = input("Enter a cloud word: ")
-    word = word.lower()
-    function_url = os.environ.get('FUNCTION_URL')
-    url = f"{function_url}/{word}"
-    response = requests.get(url)
-    if response.status_code == 404:
-        create_definition(word)
-        
-    
-    try:
-        definition = response.json().get('definition')
-        print("definition:", definition)
-    except json.JSONDecodeError:
-        print("Definition not found")
+    while True:
+        word = input("Enter a cloud word: ")
+        if word.lower() == "exit":
+            break
+        word = word.lower()
+        function_url = os.environ.get('FUNCTION_URL')
+        url = f"{function_url}/{word}"
+        response = requests.get(url)
+        if response.status_code == 404:
+            print("Definition not found, creating definition...")
+            if create_definition(word) is None:
+                print("Not related")
+                return
+            else:
+                definition = create_definition(word)
+                print("definition:", definition)
+
+        elif response.status_code == 200:
+            definition = response.json().get('definition')
+            if definition == "Not related." or definition == "Not related":
+                print("Not related")
+                return
+            else:
+                print("definition:", definition)
+
+        else:
+            print("An error occurred")
+            return
 
 if __name__ == "__main__":
-    word = input("Enter a cloud word: ")
-    word = word.lower()
-    definition = create_definition(word)
-    print("definition: ", definition)
+    main()

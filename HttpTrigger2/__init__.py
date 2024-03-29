@@ -16,3 +16,17 @@ container = database.get_container_client(container_name)
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
+    req_body = req.get_json()
+    word = req_body.get('word')
+    definition = req_body.get('definition')
+    
+    if definition == "Not related." or definition == "Not related":
+        return func.HttpResponse("Not related", status_code=200)
+    else:
+        data = {
+            "id": word,
+            "definition": definition
+        }
+
+        container.upsert_item(data)
+        return func.HttpResponse("Definition created", status_code=200)

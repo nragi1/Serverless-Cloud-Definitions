@@ -17,10 +17,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     definition = req.route_params.get('definition')
     logging.info(f"Definition: {definition}")
     
-    response = container.read_item(item=definition, partition_key=definition)
-    item = response.get('definition')
-    
-    if not item:
+    try:
+        response = container.read_item(item=definition, partition_key=definition)
+        item = response.get('definition')
+        return func.HttpResponse(json.dumps({"definition": item}), mimetype="application/json")
+    except exceptions.CosmosResourceNotFoundError:
         return func.HttpResponse("Definition not found", status_code=404)
-    
-    return func.HttpResponse(json.dumps({"definition": item}), mimetype="application/json")
